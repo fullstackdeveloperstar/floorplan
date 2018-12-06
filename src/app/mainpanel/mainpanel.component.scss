@@ -1,0 +1,15 @@
+.mainpanel{
+    display: flex;
+    height: 100vh;
+    width: 100%;
+
+    app-leftsidebar{
+        width: 300px;
+        background: #ccc;
+        border-right: solid 1px #888;
+    }
+
+    app-rightside{
+        width: calc(100% - 300px);
+    }
+}

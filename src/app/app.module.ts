@@ -3,10 +3,20 @@ import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { MainpanelComponent } from './mainpanel/mainpanel.component';
+import { LeftsidebarComponent } from './leftsidebar/leftsidebar.component';
+import { RightsideComponent } from './rightside/rightside.component';
+import { TopbarComponent } from './topbar/topbar.component';
+import { PanelComponent } from './panel/panel.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    MainpanelComponent,
+    LeftsidebarComponent,
+    RightsideComponent,
+    TopbarComponent,
+    PanelComponent,
   ],
   imports: [
     BrowserModule,
