@@ -1,10 +1,16 @@
 .rightside{
     display: flex;
     flex-direction: column;
+    height: 100%;
 
     app-topbar{
         height: 70px;
         background: #ddd;
         border-bottom: solid 1px #888;
+    }
+
+    app-panel{
+        height: 100%;
+        overflow: scroll;
     }
 }

@@ -1,3 +1,43 @@
 .leftside{
+    .library{
+        .title{
+            text-align: center;
+        }
 
-}
+        .library-tools{
+            display: flex;
+            padding: 10px;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            .tool-icon{
+                width: 50px;
+                height: 50px;
+                margin: 10px;
+                border: solid 1px;
+                cursor: pointer;
+            }
+        }
+
+    }
+
+    .settings{
+        .title{
+            text-align: center;
+        }
+
+        .settings-tools{
+            padding: 10px;
+
+            .tool-item{
+                display: flex;
+                margin: 10px;
+
+                input{
+                    width: 50px;
+                    margin-left: 10px;
+                    margin-right: 10px;
+                }
+            }
+        }
+    }
+}   
