@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Global } from '../models/global';
 
 @Component({
   selector: 'app-leftsidebar',
@@ -7,9 +8,22 @@ import { Component, OnInit } from '@angular/core';
 })
 export class LeftsidebarComponent implements OnInit {
 
-  constructor() { }
+  private length: number;
+
+  constructor(
+    private global: Global
+  ) {
+   }
 
   ngOnInit() {
+  }
+
+  lengthChanged(length: number) {
+    this.global.selectedRoom.selectedObj.changeLength(length);
+  } 
+
+  showlength(isshow) {
+    this.global.selectedRoom.selectedObj.showLength(isshow);
   }
 
 }

@@ -1,27 +1,402 @@
 import * as Konva from 'konva';
 import { Point } from './point';
+import * as uuid from 'uuid';
+import { Global } from './global';
+
+
 
 export class Wall {
-    
+    id: string;
+    preWall: Wall;
+    nextWall: Wall;
     mainLine: Konva.Line;
+    firstSignLine: Konva.Line;
+    secondSignLine: Konva.Line;
+    firstArrow: Konva.Arrow;
+    secondArrow: Konva.Arrow;
+    textLength: Konva.Text;
     stroke = "#000000";
     strokeWidth = 3;
+    over_stroke = "#ff0000";
+    over_strokeWidth = 5;
+    signbar_stroke = '#333';
+    signbar_strokeWidth = 1;
+    signLineLength = 40;
+    textlenght_width = 0;
+    ARROW_FOR_LENGTH_POINTER_LENGTH = 5;
+    ARROW_FOR_LENGTH_POINTER_WIDTH = 5;
+    ARROW_FOR_LENGTH_FILL = '#000';
+    ARROW_FOR_LENGTH_STROKE = '#000';
+    ARROW_FOR_LENGTH_STROKEWIDTH = 1;
+    TEXTLENGTH_NORMAL_COLOR = '#000';
+    TEXTLENGTH_LOCKED_COLOR = '#f00';
+    TEXTLENGTH_WIDTH = 50;
+
+    midPoint: Point;
+    isselected = false;
+    isShowLength = false;
+    isChangeOtherwise = false;
+    length;
+
 
     constructor(
+        private stage: Konva.Stage,
         public layer: Konva.Layer,
         public point1: Point,
-        public point2: Point
+        public point2: Point,
+        private global: Global
     ) {
+        this.id = uuid();
+        this.calcMidPoint();
+        this.length = this.calcLength();
         this.drawWall();
     }
 
     drawWall() { 
+        var me = this;
         this.mainLine = new Konva.Line({
             points: [this.point1.x, this.point1.y, this.point2.x, this.point2.y],
             stroke: this.stroke,
             strokeWidth: this.strokeWidth,
-          });
+        });
+
+        this.mainLine.on('mouseover', function () {
+            this.stroke(me.over_stroke);
+            this.strokeWidth(me.over_strokeWidth);
+            document.body.style.cursor = 'pointer';
+            me.layer.draw();
+        });
+
+        this.mainLine.on('mouseout', function () {
+            this.stroke(me.stroke);
+            this.strokeWidth(me.strokeWidth);
+            document.body.style.cursor = 'default';
+            me.layer.draw();
+            me.redraw();
+        });
+
+        this.mainLine.on('click', function (evt) {
+            me.length = me.calcLength();
+            me.toggleToSelect();
+            
+        });
+
+        this.drawSignBarLines();
+        this.drawArrows();
+        this.drawText();
 
         this.layer.add(this.mainLine);
     }
+
+    drawSignBarLines() {
+        var me = this;
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+
+        
+        var d_x_1 = this.signLineLength * d_y / dd;
+        var d_y_1 = d_x_1 * d_x / d_y;
+
+        if (d_y == 0) {
+            d_x_1 = 0;
+            d_y_1 = this.signLineLength * d_x / Math.abs(d_x);
+        }
+        this.firstSignLine = new Konva.Line({
+          points: [this.point1.x, this.point1.y, this.point1.x + d_x_1, this.point1.y - d_y_1],
+          stroke: me.signbar_stroke,
+          strokeWidth: me.signbar_strokeWidth,
+        });
+        this.secondSignLine = new Konva.Line({
+          points: [this.point2.x, this.point2.y, this.point2.x + d_x_1, this.point2.y - d_y_1],
+          stroke: me.signbar_stroke,
+          strokeWidth: me.signbar_strokeWidth,
+        });
+
+        this.layer.add(this.firstSignLine);
+        this.layer.add(this.secondSignLine);
+
+        this.firstSignLine.hide();
+        this.secondSignLine.hide();
+    }
+
+    drawArrows() {
+        var me = this;
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+        var k = d_x * Math.abs(d_y) / (d_y * Math.abs(d_x));
+        var k_x = d_x / Math.abs(d_x);
+        var k_y = d_y / Math.abs(d_y);
+        var d_x_1 = this.signLineLength * d_y / dd / 2;
+        var d_y_1 = d_x_1 * d_x / d_y;
+
+        var d_x_2 = Math.abs(this.textlenght_width * d_y / 2 / dd) * k_x;
+        var d_y_2 = Math.abs(d_x_2 * d_y / d_x) * k_y;
+
+        if (d_x == 0) {
+            d_x_2 = this.textlenght_width / 2 ;
+            d_y_2 = d_x_2 * k_y;
+        }
+
+        if (d_y == 0) {
+            d_y_1 = this.signLineLength / 2 * k_x;
+            d_y_2 = this.textlenght_width / 2 ;
+        }
+
+        this.firstArrow = new Konva.Arrow({
+          points: [me.midPoint.x + d_x_1 - d_x_2, me.midPoint.y - d_y_1 - d_y_2,
+                  me.point1.x + d_x_1, me.point1.y - d_y_1],
+        });
+
+        this.secondArrow = new Konva.Arrow({
+          points: [me.midPoint.x + d_x_1 + d_x_2, me.midPoint.y - d_y_1 + d_y_2,
+                  me.point2.x + d_x_1, me.point2.y - d_y_1],
+        });
+
+        this.firstArrow.pointerLength(this.ARROW_FOR_LENGTH_POINTER_LENGTH);
+        this.firstArrow.pointerWidth(me.ARROW_FOR_LENGTH_POINTER_WIDTH);
+        this.firstArrow.fill(me.ARROW_FOR_LENGTH_FILL);
+        this.firstArrow.stroke(me.ARROW_FOR_LENGTH_STROKE);
+        this.firstArrow.strokeWidth(me.ARROW_FOR_LENGTH_STROKEWIDTH);
+    
+        this.secondArrow.pointerLength(me.ARROW_FOR_LENGTH_POINTER_LENGTH);
+        this.secondArrow.pointerWidth(me.ARROW_FOR_LENGTH_POINTER_WIDTH);
+        this.secondArrow.fill(me.ARROW_FOR_LENGTH_FILL);
+        this.secondArrow.stroke(me.ARROW_FOR_LENGTH_STROKE);
+        this.secondArrow.strokeWidth(me.ARROW_FOR_LENGTH_STROKEWIDTH);
+
+        this.layer.add(this.firstArrow);
+        this.layer.add(this.secondArrow);
+
+        this.firstArrow.hide();
+        this.secondArrow.hide();
+    }
+
+    drawText() {
+        var me = this;
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+
+        var d_x_1 = this.signLineLength * d_y / dd;
+        var d_y_1 = d_x_1 * d_x / d_y;
+        if (d_y == 0) {
+            d_y_1 = this.signLineLength * d_x / Math.abs(d_x);
+        }
+        var alpha = Math.atan(d_y / d_x) * 180 / Math.PI;
+        this.textLength = new Konva.Text({
+          x: me.midPoint.x + d_x_1,
+          y: me.midPoint.y - d_y_1,
+          text: (dd / 100).toFixed(2) + " M",
+          align: 'center',
+          width: me.TEXTLENGTH_WIDTH,
+          offsetX: 50 ,
+        });
+        me.textLength.rotation(alpha);
+        this.layer.add(this.textLength);
+        this.textLength.hide();
+    }
+
+    redraw() {
+      this.redrawMainLine();
+      this.redrawArrows();
+      this.redrawSignLines();
+      this.redrawText();
+    }
+
+    redrawMainLine() {
+        this.mainLine.points([this.point1.x, this.point1.y, this.point2.x, this.point2.y]);
+        if (this.isselected) {
+            this.mainLine.stroke(this.over_stroke);
+            this.mainLine.strokeWidth(this.over_strokeWidth);
+        } else {
+            this.mainLine.stroke(this.stroke);
+            this.mainLine.strokeWidth(this.strokeWidth);
+        }
+
+        this.layer.draw();
+    }
+
+    redrawSignLines() {
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+
+        
+        var d_x_1 = this.signLineLength * d_y / dd;
+        var d_y_1 = d_x_1 * d_x / d_y;
+
+        if (d_y == 0) {
+            d_x_1 = 0;
+            d_y_1 = this.signLineLength * d_x / Math.abs(d_x);
+        }
+
+        this.firstSignLine.points([this.point1.x, this.point1.y, this.point1.x + d_x_1, this.point1.y - d_y_1]);
+        this.secondSignLine.points([this.point2.x, this.point2.y, this.point2.x + d_x_1, this.point2.y - d_y_1]);
+
+        this.layer.draw();
+
+        if (this.isShowLength) {
+            this.firstSignLine.show();
+            this.secondSignLine.show();
+        } else {
+            this.firstSignLine.hide();
+            this.secondSignLine.hide();
+        }
+    }
+
+    redrawArrows() {
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+        var k = d_x * Math.abs(d_y) / (d_y * Math.abs(d_x));
+        var k_x = d_x / Math.abs(d_x);
+        var k_y = d_y / Math.abs(d_y);
+        var d_x_1 = this.signLineLength * d_y / dd / 2;
+        var d_y_1 = d_x_1 * d_x / d_y;
+
+        var d_x_2 = Math.abs(this.textlenght_width * d_y / 2 / dd) * k_x;
+        var d_y_2 = Math.abs(d_x_2 * d_y / d_x) * k_y;
+
+        if (d_x == 0) {
+            d_x_2 = this.textlenght_width / 2 ;
+            d_y_2 = d_x_2 * k_y;
+        }
+
+        if (d_y == 0) {
+            d_y_1 = this.signLineLength / 2 * k_x;
+            d_y_2 = this.textlenght_width / 2 ;
+        }
+
+        this.calcMidPoint();
+
+        this.firstArrow.points([this.midPoint.x + d_x_1 - d_x_2, this.midPoint.y - d_y_1 - d_y_2, this.point1.x + d_x_1, this.point1.y - d_y_1]);
+        this.secondArrow.points([this.midPoint.x + d_x_1 + d_x_2, this.midPoint.y - d_y_1 + d_y_2, this.point2.x + d_x_1, this.point2.y - d_y_1]);
+        this.layer.draw();
+
+        if (this.isShowLength) { 
+            this.firstArrow.show();
+            this.secondArrow.show();
+        } else {
+            this.firstArrow.hide();
+            this.secondArrow.hide();
+        }
+
+    }
+
+    redrawText() {
+        var d_x = this.point2.x - this.point1.x;
+        var d_y = this.point2.y - this.point1.y;
+        var dd = Math.sqrt(d_x * d_x + d_y * d_y);
+
+        var d_x_1 = this.signLineLength * d_y / dd;
+        var d_y_1 = d_x_1 * d_x / d_y;
+        if (d_y == 0) {
+            d_y_1 = this.signLineLength * d_x / Math.abs(d_x);
+        }
+        var alpha = Math.atan(d_y / d_x) * 180 / Math.PI;
+        this.calcMidPoint();
+        this.textLength.x(this.midPoint.x + d_x_1);
+        this.textLength.y(this.midPoint.y - d_y_1);
+        this.textLength.text((dd / 100).toFixed(2) + " M");
+        this.textLength.rotation(alpha);
+        
+
+        if (this.isShowLength) {
+            this.textLength.show();
+        } else {
+            this.textLength.hide();
+        }
+
+        this.layer.draw();
+    }
+
+    calcMidPoint() {
+        this.midPoint = new Point(this.point1.x + (this.point2.x - this.point1.x) / 2 ,
+                        this.point1.y + (this.point2.y - this.point1.y) / 2);
+    }
+
+    calcLength() {
+        var dx = this.point2.x - this.point1.x;
+        var dy = this.point2.y - this.point1.y;
+        var length = (Math.sqrt(dx * dx + dy * dy) / 100).toFixed(2);
+        return length;
+    }
+
+    toggleToSelect() {
+        this.isselected = !this.isselected;
+       
+        if (this.isselected) {
+            this.global.selectedRoom.selectedObj = this;
+        }else {
+            this.global.selectedRoom.selectedObj = null;
+        }
+
+        this.global.selectedRoom.selectObjectRedraw();
+    }
+
+    setSelect() {
+        this.isselected = true;
+        this.redraw();
+    }
+
+    setDisSelect() {
+        this.isselected = false;
+        this.redraw();
+    }
+
+    changeLength(length) {
+        length = length * 100;
+        var dx = this.point2.x - this.point1.x;
+        var dy = this.point2.y - this.point1.y;
+        if (this.isChangeOtherwise) {
+            dx = this.point1.x - this.point2.x;
+            dy = this.point1.y - this.point2.y;
+        }
+        var length_origin = Math.sqrt(dx * dx + dy * dy);
+        if (dx ==  0) {
+            var signy = Math.sign(dy);
+            if (this.isChangeOtherwise) {
+                this.point1.y = this.point2.y + length * signy;
+            } else {
+                this.point2.y = this.point1.y + length * signy;
+            }
+        } else if(dy ==  0) {
+            var signx = Math.sign(dx);
+            if (this.isChangeOtherwise) {
+                this.point1.x = this.point2.x + length * signx;
+            } else {
+                this.point2.x = this.point1.x + length * signx;
+            }
+        } else {
+            var cosA = dx / length_origin;
+            var sinA = dy / length_origin;
+
+            var dX = length * cosA;
+            var dY = length * sinA;
+
+            if (!this.isChangeOtherwise) {
+                this.point2.x = this.point1.x + dX;
+                this.point2.y = this.point1.y + dY;
+            } else {
+                this.point1.x = this.point2.x + dX;
+                this.point1.y = this.point2.y + dY;
+            }
+            
+        }
+
+        this.redraw();
+
+        this.preWall.point2 = this.point1;
+        this.nextWall.point1 = this.point2;
+        this.preWall.redraw();
+        this.nextWall.redraw();
+    }
+
+    showLength(isshow) {
+        this.isShowLength = isshow;
+        this.redraw();
+    }
+    
 }

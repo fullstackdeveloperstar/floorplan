@@ -16,7 +16,7 @@
 
     <div class="settings">
         <h2 class="title">Settings</h2>
-        <div class="settings-tools">
+        <div class="settings-tools" *ngIf="global.selectedRoom && global.selectedRoom.selectedObj">
             <div class="tool-item">
                 <span>Color</span>
                 <input type="text">
@@ -24,7 +24,14 @@
 
             <div class="tool-item">
                 <span>Length</span>
-                <input type="number">
+                <input type="number" [(ngModel)]="global.selectedRoom.selectedObj.length" (change)="lengthChanged($event.target.value)">
+                <span>Change Otherwise</span>
+                <input type="checkbox" [(ngModel)]="global.selectedRoom.selectedObj.isChangeOtherwise">
+            </div>
+
+            <div class="tool-item">
+                <span>Show Length</span>
+                <input type="checkbox" [(ngModel)]="global.selectedRoom.selectedObj.isShowLength" (change)="showlength($event.target.checked)">
             </div>
 
             <div class="tool-item">

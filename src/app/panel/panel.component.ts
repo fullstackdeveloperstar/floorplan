@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import * as Konva from 'konva';
 import { Wall } from '../models/wall';
 import { Point } from '../models/point';
+import { Room } from '../models/room';
+import { Global } from '../models/global';
 
 @Component({
   selector: 'app-panel',
@@ -16,7 +18,9 @@ export class PanelComponent implements OnInit {
   width: number = 2000;
   height: number = 2000;
 
-  constructor() { }
+  constructor(
+    private global: Global
+  ) { }
 
   ngOnInit() {
   }
@@ -26,19 +30,22 @@ export class PanelComponent implements OnInit {
   }
 
   initPanel() {
+
+    var elmnt = document.getElementById("main-drawing-stage");
+    
     this.stage = new Konva.Stage({
       container: this.container,
-      width: this.width,
-      height: this.height,
-      // draggable: true
+      width: elmnt.offsetWidth,
+      height: elmnt.offsetHeight,
+      draggable: true
     });
 
     this.layer = new Konva.Layer();
-    
-    var p1 = new Point(10, 10);
-    var p2 = new Point(100, 100);
-    var wall = new Wall(this.layer, p1, p2 );
+    var room = new Room(this.stage, this.layer, this.global);
 
+    this.global.rooms.push(room);
+    this.global.selectedRoom = room;
+    
     this.stage.add(this.layer);
   }
 

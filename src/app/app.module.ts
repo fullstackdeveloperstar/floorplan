@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -8,6 +9,7 @@ import { LeftsidebarComponent } from './leftsidebar/leftsidebar.component';
 import { RightsideComponent } from './rightside/rightside.component';
 import { TopbarComponent } from './topbar/topbar.component';
 import { PanelComponent } from './panel/panel.component';
+import { Global } from './models/global';
 
 @NgModule({
   declarations: [
@@ -20,9 +22,12 @@ import { PanelComponent } from './panel/panel.component';
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    FormsModule
   ],
-  providers: [],
+  providers: [
+   Global
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
