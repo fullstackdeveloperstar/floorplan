@@ -2,6 +2,7 @@ import * as Konva from 'konva';
 import { Point } from './point';
 import * as uuid from 'uuid';
 import { Global } from './global';
+import { log } from 'util';
 
 
 
@@ -15,6 +16,7 @@ export class Wall {
     firstArrow: Konva.Arrow;
     secondArrow: Konva.Arrow;
     textLength: Konva.Text;
+    drageCircle: Konva.Circle;
     stroke = "#000000";
     strokeWidth = 3;
     over_stroke = "#ff0000";
@@ -32,11 +34,18 @@ export class Wall {
     TEXTLENGTH_LOCKED_COLOR = '#f00';
     TEXTLENGTH_WIDTH = 50;
 
+    DRAGE_CIRCLE_RADIUS = 10;
+    DRAGE_CIRCLE_STROKE = 'red';
+    DRAGE_CIRCLE_STROKE_WIDTH = 2;
+    DRAGE_CIRCLE_FILL = '#000';
+
     midPoint: Point;
     isselected = false;
     isShowLength = false;
     isChangeOtherwise = false;
     length;
+
+    startPos;
 
 
     constructor(
@@ -78,14 +87,59 @@ export class Wall {
         this.mainLine.on('click', function (evt) {
             me.length = me.calcLength();
             me.toggleToSelect();
-            
         });
 
         this.drawSignBarLines();
         this.drawArrows();
         this.drawText();
+        this.drawDragCircle();
 
         this.layer.add(this.mainLine);
+    }
+
+    drawDragCircle() {
+        var me = this;
+        this.drageCircle = new Konva.Circle({
+            x: me.midPoint.x,
+            y: me.midPoint.y,
+            radius: me.DRAGE_CIRCLE_RADIUS,
+            fill: me.DRAGE_CIRCLE_FILL,
+            stroke: me.DRAGE_CIRCLE_STROKE,
+            strokeWidth: me.DRAGE_CIRCLE_STROKE_WIDTH,
+            draggable: true,
+            
+        });
+
+        this.drageCircle.on('dragstart', function() {
+            me.startPos = this._lastPos;
+        });
+
+        this.drageCircle.on('dragend', function() {
+            me.point1.x = me.point1.x + this._lastPos.x - me.startPos.x;
+            me.point1.y = me.point1.y + this._lastPos.y - me.startPos.y;
+            me.point2.x = me.point2.x + this._lastPos.x - me.startPos.x;
+            me.point2.y = me.point2.y + this._lastPos.y - me.startPos.y;
+            console.log(this);
+            me.redraw();
+            me.redrawRelatedWalls();
+        });
+
+        this.drageCircle.on('dragmove', function(){
+            me.point1.x = me.point1.x + this._lastPos.x - me.startPos.x;
+            me.point1.y = me.point1.y + this._lastPos.y - me.startPos.y;
+            me.point2.x = me.point2.x + this._lastPos.x - me.startPos.x;
+            me.point2.y = me.point2.y + this._lastPos.y - me.startPos.y;
+            me.startPos = this._lastPos;
+            me.redraw();
+            me.redrawRelatedWalls();
+        });
+
+        this.drageCircle.on('mouseover', function() {
+            document.body.style.cursor = "all-scroll";
+        })
+
+        this.layer.add(this.drageCircle);
+        this.drageCircle.hide();
     }
 
     drawSignBarLines() {
@@ -203,6 +257,7 @@ export class Wall {
       this.redrawArrows();
       this.redrawSignLines();
       this.redrawText();
+      this.redrawDragCircle();
     }
 
     redrawMainLine() {
@@ -312,6 +367,28 @@ export class Wall {
         this.layer.draw();
     }
 
+    redrawRelatedWalls() {
+        this.preWall.point2 = this.point1;
+        this.nextWall.point1 = this.point2;
+        this.preWall.redraw();
+        this.nextWall.redraw();
+        this.preWall.redrawDragCircle();
+        this.nextWall.redrawDragCircle();
+    }
+
+    redrawDragCircle() {
+        this.calcMidPoint();
+        this.drageCircle.x(this.midPoint.x);
+        this.drageCircle.y(this.midPoint.y);
+        this.layer.draw();
+
+        if(this.isselected) {
+            this.drageCircle.show();
+        } else {
+            this.drageCircle.hide();
+        }
+    }
+
     calcMidPoint() {
         this.midPoint = new Point(this.point1.x + (this.point2.x - this.point1.x) / 2 ,
                         this.point1.y + (this.point2.y - this.point1.y) / 2);
@@ -388,10 +465,8 @@ export class Wall {
 
         this.redraw();
 
-        this.preWall.point2 = this.point1;
-        this.nextWall.point1 = this.point2;
-        this.preWall.redraw();
-        this.nextWall.redraw();
+        this.redrawRelatedWalls();
+        
     }
 
     showLength(isshow) {
