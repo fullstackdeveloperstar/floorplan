@@ -8,6 +8,7 @@ export class Room {
     id: string;
     public walls: Wall[] = [];
     selectedObj : any;
+    selectedCorner: any;
     constructor(
         private stage: Konva.Stage,
         private layer: Konva.Layer,
@@ -49,6 +50,21 @@ export class Room {
                 wall.setDisSelect();
             }
             
+        });
+    }
+
+    selectCornerRedraw() {
+        this.walls.forEach(wall => {
+            if (this.selectedCorner) {
+                if (wall.id == this.selectedCorner.id){
+                    wall.isSelectedCorner = true;
+                } else {
+                    wall.isSelectedCorner = false;
+                }
+            } else {
+                wall.isSelectedCorner = false;
+            }
+            wall.redraw();
         });
     }
 

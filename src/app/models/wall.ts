@@ -2,9 +2,6 @@ import * as Konva from 'konva';
 import { Point } from './point';
 import * as uuid from 'uuid';
 import { Global } from './global';
-import { log } from 'util';
-
-
 
 export class Wall {
     id: string;
@@ -17,6 +14,7 @@ export class Wall {
     secondArrow: Konva.Arrow;
     textLength: Konva.Text;
     drageCircle: Konva.Circle;
+    cornerCircle: Konva.Circle;
     stroke = "#000000";
     strokeWidth = 3;
     over_stroke = "#ff0000";
@@ -39,12 +37,22 @@ export class Wall {
     DRAGE_CIRCLE_STROKE_WIDTH = 2;
     DRAGE_CIRCLE_FILL = '#000';
 
+    CORNER_CIRCLE_RADIUS = 10;
+    CORNER_CIRCLE_STROKE = 'red';
+    CORNER_CIRCLE_STROKE_WIDTH = 2;
+    CORNER_CIRCLE_FILL = '#000';
+    CORNER_CIRCLE_OPACITY_ACTIVE = 1;
+    CORNER_CIRCLE_OPACITY_IN_ACTIVE = 0;
+    CORNER_DEFAULT_LENGTH = 100;
+
     midPoint: Point;
     isselected = false;
     isShowLength = false;
     isChangeOtherwise = false;
-    length;
+    isSelectedCorner = false;
+    
 
+    length;
     startPos;
 
 
@@ -93,6 +101,7 @@ export class Wall {
         this.drawArrows();
         this.drawText();
         this.drawDragCircle();
+        this.drawCornerCircle();
 
         this.layer.add(this.mainLine);
     }
@@ -119,7 +128,6 @@ export class Wall {
             me.point1.y = me.point1.y + this._lastPos.y - me.startPos.y;
             me.point2.x = me.point2.x + this._lastPos.x - me.startPos.x;
             me.point2.y = me.point2.y + this._lastPos.y - me.startPos.y;
-            console.log(this);
             me.redraw();
             me.redrawRelatedWalls();
         });
@@ -252,12 +260,42 @@ export class Wall {
         this.textLength.hide();
     }
 
+    drawCornerCircle() {
+        var me = this;
+        this.cornerCircle = new Konva.Circle({
+            x: me.point2.x,
+            y: me.point2.y,
+            radius: me.CORNER_CIRCLE_RADIUS,
+            fill: me.CORNER_CIRCLE_FILL,
+            stroke: me.CORNER_CIRCLE_STROKE,
+            strokeWidth: me.CORNER_CIRCLE_STROKE_WIDTH,
+            opacity: me.CORNER_CIRCLE_OPACITY_IN_ACTIVE
+        });
+
+        this.cornerCircle.on('mouseover', function() {
+            this.opacity(me.CORNER_CIRCLE_OPACITY_ACTIVE);
+            me.layer.draw();
+        });
+
+        this.cornerCircle.on('mouseout', function() {
+            me.redrawConerCircle();
+        });
+
+        this.cornerCircle.on('click', function() {
+            me.toggleCornerSelect();
+        })
+
+        this.layer.add(this.cornerCircle);
+        this.layer.draw();
+    }
+
     redraw() {
       this.redrawMainLine();
       this.redrawArrows();
       this.redrawSignLines();
       this.redrawText();
       this.redrawDragCircle();
+      this.redrawConerCircle();
     }
 
     redrawMainLine() {
@@ -368,8 +406,8 @@ export class Wall {
     }
 
     redrawRelatedWalls() {
-        this.preWall.point2 = this.point1;
-        this.nextWall.point1 = this.point2;
+        this.preWall.point2.x = this.point1.x; this.preWall.point2.y = this.point1.y;
+        this.nextWall.point1.x = this.point2.x; this.nextWall.point1.y = this.point2.y;
         this.preWall.redraw();
         this.nextWall.redraw();
         this.preWall.redrawDragCircle();
@@ -387,6 +425,18 @@ export class Wall {
         } else {
             this.drageCircle.hide();
         }
+    }
+
+    redrawConerCircle() {
+        this.cornerCircle.x(this.point2.x);
+        this.cornerCircle.y(this.point2.y);
+        if(this.isSelectedCorner) {
+            this.cornerCircle.opacity(this.CORNER_CIRCLE_OPACITY_ACTIVE);
+        } else {
+            this.cornerCircle.opacity(this.CORNER_CIRCLE_OPACITY_IN_ACTIVE);
+        }
+
+        this.layer.draw();
     }
 
     calcMidPoint() {
@@ -411,6 +461,18 @@ export class Wall {
         }
 
         this.global.selectedRoom.selectObjectRedraw();
+    }
+
+    toggleCornerSelect() {
+        this.isSelectedCorner = !this.isSelectedCorner;
+        if (this.isSelectedCorner) {
+            this.global.selectedRoom.selectedCorner = this;
+        } else{
+            this.global.selectedRoom.selectedCorner = null;
+        }
+
+        // this.redrawConerCircle();
+        this.global.selectedRoom.selectCornerRedraw();
     }
 
     setSelect() {
@@ -472,6 +534,48 @@ export class Wall {
     showLength(isshow) {
         this.isShowLength = isshow;
         this.redraw();
+    }
+
+    addCorner() {
+        // this wall proc
+        var dx = this.point2.x - this.point1.x;
+        var dy = this.point2.y - this.point1.y;
+        var L = Math.sqrt(dx * dx + dy * dy);
+        
+        
+        var d_x = dx * this.CORNER_DEFAULT_LENGTH / L;
+        var d_y = dy * this.CORNER_DEFAULT_LENGTH / L;
+        this.point2.x = this.point2.x - d_x;
+        this.point2.y = this.point2.y - d_y;
+        console.log(this.point2);
+        
+       
+        
+
+        // next wall proc
+        dx = this.nextWall.point1.x - this.nextWall.point2.x;
+        dy = this.nextWall.point1.y - this.nextWall.point2.y;
+        L = Math.sqrt(dx * dx + dy * dy);
+        console.log(L);
+        
+        d_x = dx * this.CORNER_DEFAULT_LENGTH / L;
+        d_y = dy * this.CORNER_DEFAULT_LENGTH / L;
+        this.nextWall.point1.x = this.nextWall.point1.x - d_x;
+        this.nextWall.point1.y = this.nextWall.point1.y - d_y;
+        
+
+        // creat new wall
+        var newwall = new Wall(this.stage, this.layer, new Point(this.point2.x, this.point2.y), new Point(this.nextWall.point1.x, this.nextWall.point1.y), this.global);
+        this.global.selectedRoom.walls.push(newwall);
+        this.nextWall.preWall = newwall;
+        newwall.nextWall = this.nextWall; 
+        newwall.preWall = this; 
+        this.nextWall = newwall;
+        
+        this.redraw();
+        this.nextWall.redraw();
+        newwall.nextWall.redraw();
+
     }
     
 }

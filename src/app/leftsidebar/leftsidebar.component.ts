@@ -25,5 +25,13 @@ export class LeftsidebarComponent implements OnInit {
   showlength(isshow) {
     this.global.selectedRoom.selectedObj.showLength(isshow);
   }
+  
+  addCorner() {
+    if (!(this.global.selectedRoom && this.global.selectedRoom.selectedCorner)) {
+      return;
+    }
+
+    this.global.selectedRoom.selectedCorner.addCorner();
+  }
 
 }
