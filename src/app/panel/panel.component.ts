@@ -17,6 +17,7 @@ export class PanelComponent implements OnInit {
   container: string = 'main-drawing-stage';
   width: number = 2000;
   height: number = 2000;
+  scaleBy = 1.01;
 
   constructor(
     private global: Global
@@ -47,6 +48,27 @@ export class PanelComponent implements OnInit {
     this.global.selectedRoom = room;
     
     this.stage.add(this.layer);
+
+    var me = this;
+    window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        var oldScale = me.stage.scaleX();
+
+        var mousePointTo = {
+            x: me.stage.getPointerPosition().x / oldScale - me.stage.x() / oldScale,
+            y: me.stage.getPointerPosition().y / oldScale - me.stage.y() / oldScale,
+        };
+
+        var newScale = e.deltaY > 0 ? oldScale * me.scaleBy : oldScale / me.scaleBy;
+        me.stage.scale({ x: newScale, y: newScale });
+
+        var newPos = {
+            x: -(mousePointTo.x - me.stage.getPointerPosition().x / newScale) * newScale,
+            y: -(mousePointTo.y - me.stage.getPointerPosition().y / newScale) * newScale
+        };
+        me.stage.position(newPos);
+        me.stage.batchDraw();
+    });
   }
 
   
