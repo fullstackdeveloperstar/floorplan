@@ -22,7 +22,7 @@ export class Wall {
     signbar_stroke = '#333';
     signbar_strokeWidth = 1;
     signLineLength = 40;
-    textlenght_width = 0;
+    textlength_width = 0;
     ARROW_FOR_LENGTH_POINTER_LENGTH = 5;
     ARROW_FOR_LENGTH_POINTER_WIDTH = 5;
     ARROW_FOR_LENGTH_FILL = '#000';
@@ -61,7 +61,7 @@ export class Wall {
         public layer: Konva.Layer,
         public point1: Point,
         public point2: Point,
-        private global: Global
+        public global: Global
     ) {
         this.id = uuid();
         this.calcMidPoint();
@@ -78,23 +78,41 @@ export class Wall {
         });
 
         this.mainLine.on('mouseover', function () {
-            this.stroke(me.over_stroke);
-            this.strokeWidth(me.over_strokeWidth);
-            document.body.style.cursor = 'pointer';
-            me.layer.draw();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                this.stroke(me.over_stroke);
+                this.strokeWidth(me.over_strokeWidth);
+                document.body.style.cursor = 'pointer';
+                me.layer.draw();
+            }
+
+            
+            
         });
 
         this.mainLine.on('mouseout', function () {
-            this.stroke(me.stroke);
-            this.strokeWidth(me.strokeWidth);
-            document.body.style.cursor = 'default';
-            me.layer.draw();
-            me.redraw();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                this.stroke(me.stroke);
+                this.strokeWidth(me.strokeWidth);
+                document.body.style.cursor = 'default';
+                me.layer.draw();
+                me.redraw();
+            }
         });
 
         this.mainLine.on('click', function (evt) {
-            me.length = me.calcLength();
-            me.toggleToSelect();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                me.length = me.calcLength();
+                me.toggleToSelect();
+            }
+
+            if (me.global.selectedRoom.isSelectedSplite) {
+                console.log(evt);
+                
+                var point = new Point(evt.evt.layerX, evt.evt.layerY);
+                console.log(point);
+                
+                me.global.selectedRoom.splitLine.setPoint(point, me);
+            }
         });
 
         this.drawSignBarLines();
@@ -116,7 +134,6 @@ export class Wall {
             stroke: me.DRAGE_CIRCLE_STROKE,
             strokeWidth: me.DRAGE_CIRCLE_STROKE_WIDTH,
             draggable: true,
-            
         });
 
         this.drageCircle.on('dragstart', function() {
@@ -138,6 +155,7 @@ export class Wall {
             me.point2.x = me.point2.x + this._lastPos.x - me.startPos.x;
             me.point2.y = me.point2.y + this._lastPos.y - me.startPos.y;
             me.startPos = this._lastPos;
+            
             me.redraw();
             me.redrawRelatedWalls();
         });
@@ -193,17 +211,17 @@ export class Wall {
         var d_x_1 = this.signLineLength * d_y / dd / 2;
         var d_y_1 = d_x_1 * d_x / d_y;
 
-        var d_x_2 = Math.abs(this.textlenght_width * d_y / 2 / dd) * k_x;
+        var d_x_2 = Math.abs(this.textlength_width * d_y / 2 / dd) * k_x;
         var d_y_2 = Math.abs(d_x_2 * d_y / d_x) * k_y;
 
         if (d_x == 0) {
-            d_x_2 = this.textlenght_width / 2 ;
+            d_x_2 = this.textlength_width / 2 ;
             d_y_2 = d_x_2 * k_y;
         }
 
         if (d_y == 0) {
             d_y_1 = this.signLineLength / 2 * k_x;
-            d_y_2 = this.textlenght_width / 2 ;
+            d_y_2 = this.textlength_width / 2 ;
         }
 
         this.firstArrow = new Konva.Arrow({
@@ -253,7 +271,7 @@ export class Wall {
           text: (dd / 100).toFixed(2) + " M",
           align: 'center',
           width: me.TEXTLENGTH_WIDTH,
-          offsetX: 50 ,
+          offsetX: 25,
         });
         me.textLength.rotation(alpha);
         this.layer.add(this.textLength);
@@ -273,16 +291,22 @@ export class Wall {
         });
 
         this.cornerCircle.on('mouseover', function() {
-            this.opacity(me.CORNER_CIRCLE_OPACITY_ACTIVE);
-            me.layer.draw();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                this.opacity(me.CORNER_CIRCLE_OPACITY_ACTIVE);
+                me.layer.draw();
+            }
         });
 
         this.cornerCircle.on('mouseout', function() {
-            me.redrawConerCircle();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                me.redrawConerCircle();    
+            }
         });
 
         this.cornerCircle.on('click', function() {
-            me.toggleCornerSelect();
+            if (!me.global.selectedRoom.isSelectedSplite) {
+                me.toggleCornerSelect();
+            }
         })
 
         this.layer.add(this.cornerCircle);
@@ -349,17 +373,17 @@ export class Wall {
         var d_x_1 = this.signLineLength * d_y / dd / 2;
         var d_y_1 = d_x_1 * d_x / d_y;
 
-        var d_x_2 = Math.abs(this.textlenght_width * d_y / 2 / dd) * k_x;
+        var d_x_2 = Math.abs(this.textlength_width * d_y / 2 / dd) * k_x;
         var d_y_2 = Math.abs(d_x_2 * d_y / d_x) * k_y;
 
         if (d_x == 0) {
-            d_x_2 = this.textlenght_width / 2 ;
+            d_x_2 = this.textlength_width / 2 ;
             d_y_2 = d_x_2 * k_y;
         }
 
         if (d_y == 0) {
             d_y_1 = this.signLineLength / 2 * k_x;
-            d_y_2 = this.textlenght_width / 2 ;
+            d_y_2 = this.textlength_width / 2 ;
         }
 
         this.calcMidPoint();
@@ -477,6 +501,7 @@ export class Wall {
 
     setSelect() {
         this.isselected = true;
+        // this.global.selectedRoom.selectedObj = this;
         this.redraw();
     }
 
@@ -547,16 +572,12 @@ export class Wall {
         var d_y = dy * this.CORNER_DEFAULT_LENGTH / L;
         this.point2.x = this.point2.x - d_x;
         this.point2.y = this.point2.y - d_y;
-        console.log(this.point2);
         
-       
-        
-
         // next wall proc
         dx = this.nextWall.point1.x - this.nextWall.point2.x;
         dy = this.nextWall.point1.y - this.nextWall.point2.y;
         L = Math.sqrt(dx * dx + dy * dy);
-        console.log(L);
+        
         
         d_x = dx * this.CORNER_DEFAULT_LENGTH / L;
         d_y = dy * this.CORNER_DEFAULT_LENGTH / L;
@@ -571,6 +592,8 @@ export class Wall {
         newwall.nextWall = this.nextWall; 
         newwall.preWall = this; 
         this.nextWall = newwall;
+        this.global.selectedRoom.selectedObj = newwall;
+        newwall.setSelect();
         
         this.redraw();
         this.nextWall.redraw();

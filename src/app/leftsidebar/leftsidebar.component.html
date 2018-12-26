@@ -11,7 +11,7 @@
             <img class="tool-icon" src="/assets/toolsicon/6.png" alt="">
             <img class="tool-icon" src="/assets/toolsicon/7.png" alt="">
             <img class="tool-icon" src="/assets/toolsicon/8.png" alt="">
-            <img class="tool-icon" src="/assets/toolsicon/5.png" alt="">
+            <img class="tool-icon" src="/assets/toolsicon/5.png" alt="" [ngClass]="{'active':global.selectedRoom && global.selectedRoom.isSelectedSplite}" (click)="toggleSplitLines()">
         </div>
     </div>
 

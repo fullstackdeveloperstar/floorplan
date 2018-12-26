@@ -9,6 +9,7 @@ import { Global } from '../models/global';
 export class LeftsidebarComponent implements OnInit {
 
   private length: number;
+  
 
   constructor(
     private global: Global
@@ -32,6 +33,10 @@ export class LeftsidebarComponent implements OnInit {
     }
 
     this.global.selectedRoom.selectedCorner.addCorner();
+  }
+
+  toggleSplitLines() {
+    this.global.selectedRoom.isSelectedSplite = !this.global.selectedRoom.isSelectedSplite  ;
   }
 
 }
